@@ -38,6 +38,8 @@ one beat (`DANCES` in `web/sprites.js`): 龍哥 disco, 曉佳 bunny hops, 曉曼
 chicken dance, 豪仔 spins and star jumps, 婆婆 the twist, 細妹 YMCA.
 Reduced-motion settings slow it right down.
 
+![A real Bingo: the callers dance, confetti and balloons](docs/screenshots/win-dance.gif)
+
 **Players.** 玩家名單 on the desk (or a tap on the strip) opens the list: type a
 name, pick a pixel icon (the six callers' heads, or a cat, panda, bear, chick,
 ghost, robot, 奶茶, 蛋撻, 魚蛋, star, heart, crown or mushroom — `web/icons.js`),

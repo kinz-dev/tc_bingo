@@ -171,7 +171,8 @@ function renderRecent() {
 function renderStatus() {
   const d = state.drawn.length;
   $('countPill').textContent = state.opened ? `已抽 ${d} · 剩 ${state.pool - d}` : '未開波';
-  $('stageGame').textContent = `第 ${state.game} 局`;
+  // The pixel font's 7 reads as a 1 at this size, so the number is in the plain face.
+  $('stageGame').innerHTML = `第 <b>${state.game}</b> 局`;
   $('drawBtn').textContent = !state.opened ? '開波' : d >= state.pool ? '全部抽晒' : '抽號';
   $('drawBtn').disabled = busy || (state.opened && d >= state.pool);
   $('undoBtn').disabled = busy || !d;

@@ -170,6 +170,7 @@ h2 { margin: 0; font-size: 16px; }
   font: 600 14px var(--pixel), var(--font);
   opacity: 0.9;
 }
+#stageGame b { font: 800 15px var(--font); }
 .pill-live {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 1px 8px;

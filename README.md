@@ -3,6 +3,8 @@
 A host's console for a party bingo night, in 譚仔新聞's look. Players keep their
 paper cards; this page is the cage, the caller and the board.
 
+![The stage mid-game: the ball, the six callers, the pot and the players' strip](docs/screenshots/stage.png)
+
 ```sh
 ./run.sh            # first run creates .venv and installs edge-tts
 ```
@@ -80,3 +82,14 @@ and says whether it wins under the 贏法 setting (一條線 / 兩條線 / 四�
 Cards without a number can still be checked by typing their numbers in.
 
 The game is kept in the browser (localStorage), so a reload carries on where it left off.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![A real Bingo: confetti and the callers dancing](docs/screenshots/win.png) | ![Checking a claim by card number, ticking the winner](docs/screenshots/check.png) |
+| A real Bingo | 核對 Bingo — type the card number, tick who won |
+| ![The night's leaderboard](docs/screenshots/leaderboard.png) | ![The players list with stakes and winnings](docs/screenshots/players.png) |
+| 完場排行榜 | 玩家名單 and the books |
+| ![Printable cards](docs/screenshots/print.png) | <img src="docs/screenshots/phone.png" alt="On a phone" width="260"> |
+| 印卡 | On a phone |

@@ -95,3 +95,8 @@ The game is kept in the browser (localStorage), so a reload carries on where it 
 | 完場排行榜 | 玩家名單 and the books |
 | ![Printable cards](docs/screenshots/print.png) | <img src="docs/screenshots/phone.png" alt="On a phone" width="260"> |
 | 印卡 | On a phone |
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). The bundled Fusion Pixel font is under the SIL
+Open Font License ([web/vendor/fonts/FUSION-PIXEL-OFL.txt](web/vendor/fonts/FUSION-PIXEL-OFL.txt)).

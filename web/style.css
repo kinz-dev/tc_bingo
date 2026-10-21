@@ -1,0 +1,776 @@
+/* 譚仔揼波拿 — the host's console, in 譚仔新聞's clothes.
+ *
+ * Same palette and furniture as the station page: a deep-green app bar, the
+ * yellow band, pill buttons, white panels on a light grey page. Pixels live
+ * where they do there — in the picture (the ball, the numbers) and the mark.
+ */
+
+@font-face {
+  font-family: "Fusion Pixel 12";
+  src: url("vendor/fonts/fusion-pixel-12px-zh_hk.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  --font: "Noto Sans HK", "PingFang HK", "Microsoft JhengHei", "Hiragino Sans", system-ui, -apple-system, sans-serif;
+  --pixel: "Pixelify Sans", "Fusion Pixel 12", system-ui, sans-serif;
+  /* Numbers are read from the back of the room: a heavy plain face, never the pixel one,
+     whose B, 8, 5 and S are one shape apart. */
+  --num: "Arial Black", "Helvetica Neue", Arial, var(--font);
+
+  /* forest — 森林綠 */
+  color-scheme: light;
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --surface-2: #e9ebef;
+  --text: #1a1a1a;
+  --muted: #5f6368;
+  --line: #dadce0;
+  --brand: #0b6b3a;
+  --brand-2: #00a852;
+  --on-brand: #ffffff;
+  --accent: #ffd200;
+  --on-accent: #1a1a1a;
+  --live: #e02020;
+  --picture: #0a0f0c;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* 夜場 — for a dim function room and a projector */
+:root[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0c1210; --surface: #141c18; --surface-2: #0f1613; --text: #e9efe9; --muted: #93a39a; --line: #24302a;
+  --brand: #08482a; --brand-2: #2fd17a; --on-brand: #ffffff; --accent: #ffd200; --on-accent: #1a1a1a; --live: #ff3b3b;
+  --picture: #000000;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+
+p { margin: 0; }
+h2 { margin: 0; font-size: 16px; }
+
+/* ------------------------------------------------------------------ */
+/* App bar                                                             */
+/* ------------------------------------------------------------------ */
+
+.appbar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 20px;
+  height: 56px;
+  padding: 0 16px;
+  background: var(--brand);
+  color: var(--on-brand);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+  user-select: none;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.brand-mark {
+  padding: 3px 8px;
+  font: 900 14px var(--num);
+  letter-spacing: 0.04em;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-radius: 4px;
+}
+.brand-text strong { display: block; font-size: 18px; line-height: 1.1; white-space: nowrap; }
+.brand-text small { display: block; font-size: 11px; opacity: 0.8; letter-spacing: 0.08em; }
+
+.appbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.count-pill {
+  padding: 3px 12px;
+  font: 700 14px var(--font);
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.app-link {
+  padding: 5px 12px;
+  font: 14px var(--font);
+  color: inherit;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.app-link:hover { background: rgba(255, 255, 255, 0.14); }
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
+
+.page { margin: 0 auto; padding: 16px 16px 48px; }
+
+/* The picture across the whole width, the host's bar under it. */
+.live { display: grid; gap: 12px; }
+
+/* ------------------------------------------------------------------ */
+/* Stage — the picture the room watches                                */
+/* ------------------------------------------------------------------ */
+
+.stage {
+  position: relative;
+  /* 16:9 across the page, but never so tall that the desk drops off the screen. */
+  height: min(calc((100vw - 32px) * 0.5625), max(420px, calc(100svh - 56px - 16px - 12px - 160px)));
+  overflow: hidden;
+  border-radius: var(--radius);
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(0, 168, 82, 0.35), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 4px),
+    var(--picture);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+}
+
+/* The pixel layers (show.js): one behind the ball, one in front of it. */
+.stage-layer {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.stage-layer.back { z-index: 0; }
+.stage-layer.front { z-index: 2; }
+.stage > :is(.stage-bug, .ball-wrap, .lower-third, .players) { position: relative; }
+.stage-bug, .lower-third, .players { z-index: 3; }
+.ball-wrap { z-index: 1; }
+
+/* A colour flash over the picture when a ball lands, or someone claims. */
+.flash { position: absolute; inset: 0; z-index: 2; opacity: 0; pointer-events: none; mix-blend-mode: screen; }
+.flash.go { animation: flash 0.55s ease-out; }
+@keyframes flash { 0% { opacity: 0.55; } 100% { opacity: 0; } }
+
+.stage.shake { animation: shake 0.5s steps(10); }
+@keyframes shake {
+  0%, 100% { transform: none; } 20% { transform: translate(-6px, 2px); } 40% { transform: translate(6px, -2px); }
+  60% { transform: translate(-4px, -1px); } 80% { transform: translate(4px, 1px); }
+}
+
+.stage-bug {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px 0;
+  font: 600 14px var(--pixel), var(--font);
+  opacity: 0.9;
+}
+.pill-live {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 1px 8px;
+  font: 700 11px var(--font); letter-spacing: 0.08em;
+  background: var(--live); border-radius: 999px;
+}
+.pill-live i { width: 6px; height: 6px; background: #fff; border-radius: 50%; animation: blink 1.2s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+
+/* Every row placed by hand: the prize shares row 1 with the bug. */
+.stage-bug { grid-row: 1; grid-column: 1; align-self: start; }
+/* The ball hangs from the top of its row: the room below is the callers' floor. */
+.ball-wrap { grid-row: 2; display: grid; place-items: start center; padding-top: 6px; min-height: 0; container-type: size; }
+.lower-third { grid-row: 3; }
+.players { grid-row: 4; }
+
+/* The ball: a coloured rim around a white face, the way a real bingo ball looks. */
+.ball {
+  --ball: var(--accent);
+  --bw: min(48vh, 31vw, 480px, 89cqh); /* never taller than its space; the number is sized from this too */
+  position: relative;
+  display: grid; place-items: center; align-content: center;
+  width: var(--bw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 32%), var(--ball);
+  box-shadow: inset -10px -14px 0 rgba(0, 0, 0, 0.18), 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.ball::before {
+  content: "";
+  position: absolute; inset: 12%;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.08);
+}
+.ball > span { position: relative; color: #1a1a1a; line-height: 1; }
+.ball-letter { font: 900 calc(var(--bw) * 0.12) var(--num); color: var(--ball) !important; min-height: 0.2em; }
+.ball-num { font: 900 calc(var(--bw) * 0.47) var(--num); letter-spacing: -0.05em; margin-top: -0.06em; }
+
+.ball[data-state="idle"] { animation: float 3.2s ease-in-out infinite; }
+.ball[data-state="spin"] { animation: wobble 0.24s steps(3) infinite; }
+.ball[data-state="pop"] { animation: drop 0.75s cubic-bezier(.3, 0, .3, 1); }
+@keyframes float { 50% { transform: translateY(-6px) rotate(-1.5deg); } }
+@keyframes wobble { 0% { transform: rotate(-8deg) scale(1.02); } 50% { transform: rotate(8deg) scale(0.95); } 100% { transform: rotate(-8deg) scale(1.02); } }
+/* Drops in from above, squashes on landing, settles. */
+@keyframes drop {
+  0% { transform: translateY(-70%) scale(0.7); }
+  45% { transform: translateY(0) scale(1.12, 0.86); }
+  62% { transform: translateY(-9%) scale(0.96, 1.05); }
+  80% { transform: translateY(0) scale(1.03, 0.97); }
+  100% { transform: none; }
+}
+/* While the cage turns: a pulsing halo, and the ball's colours racing. */
+.stage.spinning .ball { box-shadow: inset -10px -14px 0 rgba(0, 0, 0, 0.18), 0 0 0 6px rgba(255, 210, 0, 0.35), 0 0 60px 10px rgba(255, 210, 0, 0.45); }
+.stage.spinning .ball::after {
+  content: ""; position: absolute; inset: -14px; border-radius: 50%;
+  border: 4px dashed rgba(255, 210, 0, 0.8);
+  animation: turn 0.9s steps(8) infinite;
+}
+@keyframes turn { to { transform: rotate(360deg); } }
+
+.recent {
+  position: absolute; z-index: 3;
+  top: 48px; right: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.mini {
+  --ball: var(--accent);
+  display: grid; place-items: center; align-content: center;
+  width: 46px; height: 46px;
+  font: 900 17px/1 var(--num);
+  color: #1a1a1a;
+  background: #fff;
+  border: 5px solid var(--ball);
+  border-radius: 50%;
+  opacity: 0.85;
+}
+.mini b { font-size: 9px; color: var(--ball); }
+.mini:first-child { opacity: 1; animation: slidein 0.5s cubic-bezier(.2, 1.4, .4, 1); }
+.mini:nth-child(n + 4) { opacity: 0.55; transform: scale(0.85); }
+@keyframes slidein { from { transform: translateX(-140px) scale(1.4); opacity: 0; } }
+
+/* The yellow band: who is talking, and what they said. */
+.lower-third {
+  display: flex; align-items: stretch;
+  min-height: 56px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.speaker {
+  display: grid; place-items: center;
+  padding: 0 16px;
+  font-weight: 700; font-size: 16px;
+  color: #fff;
+  background: var(--brand);
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.speaker.pop { animation: chip 0.35s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes chip { from { transform: scale(0.6); } }
+.caption {
+  align-self: center;
+  padding: 8px 16px;
+  font-size: clamp(16px, 1.8vw, 22px);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* The players, along the very bottom of the picture: icon and name each.
+   Too many to fit, and the row scrolls by like a ticker. */
+.players {
+  display: block;
+  overflow: hidden;
+  padding: 16px 0 7px; /* room above for the leader's crown */
+  background: rgba(0, 0, 0, 0.55);
+  border: 0;
+  border-top: 2px solid rgba(255, 210, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+.players-track { display: inline-flex; gap: 8px; padding: 0 12px; white-space: nowrap; }
+.players.scroll .players-track { animation: ticker var(--ticker, 30s) linear infinite; }
+@keyframes ticker { to { transform: translateX(-50%); } }
+.player-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 12px 2px 3px;
+  font: 600 clamp(14px, 1.4vw, 19px) var(--pixel), var(--font);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+.player-chip img, .player-list img, .player-pick, .icon-grid img { image-rendering: pixelated; }
+.player-chip img { width: clamp(28px, 2.6vw, 36px); height: clamp(28px, 2.6vw, 36px); border-radius: 50%; background: rgba(255, 255, 255, 0.12); }
+.player-chip.new { animation: chip 0.45s cubic-bezier(.2, 1.8, .4, 1); }
+.player-chip { position: relative; }
+/* Running total won, next to the icon. */
+.player-won {
+  padding: 0 7px;
+  font: 900 0.85em/1.5 var(--num);
+  color: #1a1a1a;
+  background: var(--accent);
+  border-radius: 999px;
+}
+/* Whoever has won the most: a gold rim and a crown. */
+.player-chip.leader { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 12px rgba(255, 210, 0, 0.45); }
+.player-chip.leader::before {
+  content: ""; position: absolute; left: 2px; top: -15px;
+  width: 24px; height: 24px;
+  background: var(--crown) center / contain no-repeat;
+  image-rendering: pixelated;
+  transform: rotate(-18deg);
+}
+/* This game's winners light up until the next game. */
+.player-chip.winner {
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #fff3a0, #ffd200);
+  border-color: #fff;
+  animation: winner 0.9s ease-in-out infinite;
+}
+.player-chip.winner .player-won { background: #fff; }
+@keyframes winner {
+  0%, 100% { box-shadow: 0 0 0 2px #ffd200, 0 0 10px 2px rgba(255, 210, 0, 0.6); transform: translateY(0); }
+  50% { box-shadow: 0 0 0 4px #fff, 0 0 26px 8px rgba(255, 210, 0, 0.9); transform: translateY(-3px); }
+}
+/* '+$6' rising off a winner's chip. */
+.player-gain {
+  position: absolute; right: 6px; top: -4px;
+  font: 900 15px var(--num); font-style: normal;
+  color: var(--accent);
+  text-shadow: 0 2px 0 #000;
+  pointer-events: none;
+  animation: gain 2.4s ease-out forwards;
+}
+@keyframes gain { 0% { transform: translateY(8px) scale(0.6); opacity: 0; } 15% { transform: translateY(-6px) scale(1.3); opacity: 1; } 100% { transform: translateY(-18px); opacity: 0; } }
+.player-won.down { color: #fff; background: var(--live); }
+.player-list .player-won { font-size: 14px; }
+.player-ledger { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* The prize: the pot for this game, floating about over the top of the picture. */
+/* It has the top band of the picture to itself (grid row 1, beside the LIVE
+   bug), so it drifts about up there and never covers the ball. */
+.prize {
+  position: relative; z-index: 3;
+  grid-row: 1; grid-column: 1;
+  justify-self: center;
+  margin: 6px 0 0;
+  pointer-events: none;
+  animation: drift 14s ease-in-out infinite;
+}
+@keyframes drift {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-90%); }
+  75% { transform: translateX(90%); }
+}
+.prize-bob {
+  position: relative;
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 2px 20px 4px;
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #fff3a0, #ffd200 55%, #e8a400);
+  border: 3px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px #b07800, 0 0 30px 6px rgba(255, 210, 0, 0.55), 0 10px 20px rgba(0, 0, 0, 0.45);
+  animation: bob 2.2s ease-in-out infinite;
+}
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(8px) rotate(3deg); } }
+.prize small { font: 700 clamp(12px, 1.2vw, 17px) var(--pixel), var(--font); }
+.prize b { font: 900 clamp(26px, min(4vw, 5.5vh), 58px)/1 var(--num); letter-spacing: -0.02em; text-shadow: 0 2px 0 rgba(255, 255, 255, 0.6); }
+.prize.pop .prize-bob { animation: prizepop 0.6s cubic-bezier(.2, 1.8, .4, 1), bob 2.2s ease-in-out 0.6s infinite; }
+@keyframes prizepop { from { transform: scale(0.4); } }
+/* On a real Bingo it comes down to the middle and throbs. */
+.prize.won { animation: none; transform: none; }
+.prize.won .prize-bob { animation: throb 0.5s ease-in-out infinite; }
+@keyframes throb { 50% { transform: scale(1.18) rotate(-2deg); } }
+/* Three gold coins circling the pot, flipping as they go. */
+.coin {
+  position: absolute; left: 50%; top: 50%;
+  width: 18px; height: 18px; margin: -9px;
+  background: radial-gradient(circle at 35% 35%, #fff6b0, #ffd200 45%, #c98a00);
+  border: 2px solid #8a5a00;
+  border-radius: 50%;
+  animation: orbit 3s linear infinite;
+}
+.coin:nth-child(2) { animation-delay: -1s; }
+.coin:nth-child(3) { animation-delay: -2s; }
+@keyframes orbit {
+  0% { transform: rotate(0deg) translateX(90px) rotate(0deg) scaleX(1); }
+  25% { transform: rotate(90deg) translateX(90px) rotate(-90deg) scaleX(0.2); }
+  50% { transform: rotate(180deg) translateX(90px) rotate(-180deg) scaleX(1); }
+  75% { transform: rotate(270deg) translateX(90px) rotate(-270deg) scaleX(0.2); }
+  100% { transform: rotate(360deg) translateX(90px) rotate(-360deg) scaleX(1); }
+}
+
+/* Auto-draw's countdown to the next ball: a ring running down. */
+.countdown {
+  position: absolute; z-index: 4;
+  top: 46px; left: 18px;
+  display: grid; justify-items: center; gap: 2px;
+  pointer-events: none;
+}
+.cd-ring {
+  --size: clamp(84px, 11vw, 180px);
+  display: grid; place-items: center;
+  width: var(--size); height: var(--size);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(0, 0, 0, 0.75) 0 64%, transparent 65%),
+    conic-gradient(var(--accent) calc(var(--p, 1) * 1turn), rgba(255, 255, 255, 0.15) 0);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.cd-ring b { font: 900 calc(var(--size) * 0.5)/1 var(--num); color: #fff; }
+.countdown small { font: 700 clamp(13px, 1.5vw, 22px) var(--pixel), var(--font); opacity: 0.9; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6); }
+.countdown.urgent .cd-ring {
+  background:
+    radial-gradient(circle, rgba(0, 0, 0, 0.75) 0 64%, transparent 65%),
+    conic-gradient(var(--live) calc(var(--p, 1) * 1turn), rgba(255, 255, 255, 0.15) 0);
+  animation: cdpulse 1s ease-in-out infinite;
+}
+.countdown.urgent b { color: #ffd200; }
+@keyframes cdpulse { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.14); } }
+
+/* 完場排行榜: over the whole picture, the callers still dancing behind it. */
+.leaderboard {
+  position: absolute; inset: 0; z-index: 5;
+  display: grid; place-items: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(11, 107, 58, 0.55), rgba(0, 0, 0, 0.82) 70%);
+  animation: lbfade 0.4s ease-out;
+}
+@keyframes lbfade { from { opacity: 0; } }
+.lb-inner { width: min(1100px, 100%); max-height: 100%; overflow: hidden; display: grid; gap: 8px; justify-items: center; align-content: center; }
+.lb-title {
+  font: 700 clamp(28px, 4.5vw, 64px)/1.1 var(--pixel), var(--font);
+  color: var(--accent);
+  text-shadow: 0 4px 0 #8a5a00, 0 0 30px rgba(255, 210, 0, 0.5);
+  letter-spacing: 0.06em;
+}
+.lb-sub { font: 600 clamp(13px, 1.4vw, 18px) var(--pixel), var(--font); opacity: 0.85; }
+/* Sized by app.js to fit the picture: font-size on the list, everything else in em. */
+.lb-list { list-style: none; margin: 4px 0 0; padding: 0; width: 100%; display: grid; gap: 0.35em; font-size: 22px; }
+.lb-list.cols-2 { grid-template-columns: 1fr 1fr; }
+.lb-list.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.lb-row {
+  display: grid; grid-template-columns: 2.2em auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 0.25em 0.7em 0.25em 0.45em;
+  font-size: 1em;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  opacity: 0;
+  transform: translateX(-60px);
+}
+.lb-row.in { opacity: 1; transform: none; transition: opacity 0.35s, transform 0.5s cubic-bezier(.2, 1.6, .4, 1); }
+.lb-rank { font: 900 1.3em var(--num); text-align: center; color: rgba(255, 255, 255, 0.7); }
+.lb-row img { width: 1.9em; height: 1.9em; image-rendering: pixelated; border-radius: 8px; background: rgba(255, 255, 255, 0.12); }
+.lb-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-name small { display: block; font-size: 0.6em; font-weight: 400; opacity: 0.75; }
+.lb-profit { font-size: 1.1em; padding: 2px 12px; }
+.lb-row.rank-1 {
+  font-size: 1.45em;
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #fff3a0, #ffd200 60%, #e8a400);
+  border-color: #fff;
+}
+.lb-row.rank-1.in { animation: champ 0.8s ease-in-out 0.5s infinite; }
+@keyframes champ { 50% { box-shadow: 0 0 0 4px #fff, 0 0 40px 10px rgba(255, 210, 0, 0.8); } }
+.lb-row.rank-1 .lb-rank { color: #8a5a00; }
+.lb-row.rank-1 .lb-rank::before { content: ""; display: block; height: 0.8em; background: var(--crown) center / contain no-repeat; image-rendering: pixelated; }
+.lb-row.rank-1 .lb-profit:not(.down) { background: #fff; }
+.lb-row.rank-2 { background: linear-gradient(180deg, rgba(230, 236, 242, 0.35), rgba(160, 170, 180, 0.25)); border-color: #d6dde4; }
+.lb-row.rank-3 { background: linear-gradient(180deg, rgba(222, 150, 90, 0.4), rgba(150, 90, 40, 0.3)); border-color: #d9935a; }
+.lb-list:is(.cols-2, .cols-3) .lb-row.rank-1 { grid-column: 1 / -1; justify-self: center; width: min(100%, 640px); }
+.stage.lb-open .prize, .stage.lb-open .countdown { visibility: hidden; }
+.lb-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 40px; height: 40px;
+  font-size: 18px; color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  border: 0; border-radius: 50%;
+  cursor: pointer;
+}
+.lb-close:hover { background: rgba(255, 255, 255, 0.3); }
+
+/* ------------------------------------------------------------------ */
+/* Desk — the host's buttons, in a bar under the picture               */
+/* ------------------------------------------------------------------ */
+
+.desk {
+  display: grid; gap: 10px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.desk-bar {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(120px, 1fr) minmax(170px, 1.5fr) minmax(120px, 1fr) minmax(150px, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+.desk-col { display: grid; gap: 8px; align-content: center; }
+.desk .hint { text-align: left; line-height: 1.4; }
+
+.btn {
+  min-height: 42px;
+  padding: 8px 16px;
+  font: 700 15px var(--font);
+  color: var(--text);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { color: var(--on-accent); background: var(--accent); }
+.btn-ghost { background: var(--surface-2); }
+.btn-ghost:hover:not(:disabled) { background: var(--line); }
+.btn-ghost[aria-pressed="true"] { color: #fff; background: var(--brand-2); }
+.btn-small { min-height: 36px; font-size: 13px; font-weight: 500; }
+
+.btn-draw {
+  min-height: 84px;
+  font: 700 34px var(--pixel), var(--font);
+  letter-spacing: 0.08em;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-radius: 18px;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.15);
+}
+.btn-draw { position: relative; overflow: hidden; }
+.btn-draw:not(:disabled) { animation: breathe 2.4s ease-in-out infinite; }
+.btn-draw:not(:disabled)::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: shine 3s ease-in-out infinite;
+}
+@keyframes breathe { 50% { box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.15), 0 0 0 6px rgba(255, 210, 0, 0.3); } }
+@keyframes shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+.btn-bingo:hover:not(:disabled) { animation: jiggle 0.4s steps(4) infinite; }
+@keyframes jiggle { 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+.btn-draw:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15); }
+.btn-bingo { min-height: 52px; font-size: 18px; color: #fff; background: var(--live); }
+.btn-bad { color: #fff; background: var(--live); }
+.btn-danger { color: var(--live); }
+.btn-danger:hover:not(:disabled) { color: #fff; background: var(--live) !important; }
+.check-line { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.check-line input { width: 18px; height: 18px; }
+
+.hint { font-size: 12px; color: var(--muted); text-align: center; }
+.warm { font-size: 12px; color: var(--brand-2); text-align: center; }
+.fine { font-size: 12px; color: var(--muted); }
+
+.settings { border-top: 1px solid var(--line); padding-top: 8px; }
+.settings summary { cursor: pointer; font-weight: 700; color: var(--muted); }
+.settings[open] { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 18px; align-items: end; }
+.settings[open] summary, .settings .fine { grid-column: 1 / -1; }
+.settings label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.settings label.check { display: flex; align-items: center; gap: 8px; }
+.settings select {
+  padding: 7px 10px;
+  font: 14px var(--font);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+/* ------------------------------------------------------------------ */
+/* Board                                                               */
+/* ------------------------------------------------------------------ */
+
+.panel {
+  margin-top: 18px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+
+.board { display: grid; gap: 6px; }
+.board-75 { grid-template-columns: repeat(16, minmax(0, 1fr)); }
+.board-90 { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+
+.cell {
+  --ball: var(--brand);
+  display: grid; place-items: center;
+  aspect-ratio: 1;
+  max-height: 56px;
+  font: 800 clamp(12px, 1.5vw, 20px) var(--num);
+  color: var(--muted);
+  background: var(--surface-2);
+  border-radius: 6px;
+  transition: background 0.3s, color 0.3s;
+}
+.board-90 .cell { aspect-ratio: auto; height: 44px; }
+.cell.head { font-weight: 700; color: #fff; background: var(--ball); }
+.cell.on { color: #fff; background: var(--ball); }
+.cell.last { outline: 4px solid var(--accent); outline-offset: 1px; animation: flip 0.6s cubic-bezier(.3, 1.5, .5, 1), glow 1s steps(2) 0.6s 4; }
+@keyframes flip { 0% { transform: rotateY(90deg) scale(1.6); } 100% { transform: none; } }
+@keyframes glow { 50% { outline-color: transparent; } }
+
+/* ------------------------------------------------------------------ */
+/* Bingo check                                                         */
+/* ------------------------------------------------------------------ */
+
+.check-dialog {
+  width: min(520px, calc(100% - 32px));
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+.check-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+.check-form { display: grid; gap: 12px; padding: 22px; }
+.check-form h2 { font-size: 20px; }
+.check-form input {
+  padding: 12px 14px;
+  font: 700 20px var(--num);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+.check-form input:focus { border-color: var(--brand-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: grid; place-items: center;
+  min-width: 40px; height: 40px; padding: 0 6px;
+  font: 900 17px var(--num);
+  border-radius: 8px;
+}
+.chip.ok { color: #fff; background: var(--brand-2); }
+.chip.miss { color: #fff; background: var(--live); }
+.verdict { margin-top: 8px; font-weight: 700; }
+.verdict.ok { color: var(--brand-2); }
+.verdict.miss { color: var(--live); }
+.check-id { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.check-id input { font-size: 26px; letter-spacing: 0.1em; }
+.check-manual summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.check-manual[open] { display: grid; gap: 8px; }
+
+/* The claimed card, rebuilt from its ID: drawn squares green, the winning ones yellow. */
+.mini-card { width: 100%; max-width: 320px; margin: 0 auto; border-collapse: separate; border-spacing: 3px; table-layout: fixed; }
+.mini-card caption { font: 900 14px var(--num); color: var(--muted); padding-bottom: 4px; }
+.mini-card th { font: 900 16px var(--num); color: #fff; background: var(--brand); border-radius: 4px; }
+.mini-card td {
+  height: 40px;
+  text-align: center;
+  font: 800 17px var(--num);
+  color: var(--muted);
+  background: var(--surface-2);
+  border-radius: 4px;
+}
+.mini-card td.on { color: #fff; background: var(--brand-2); }
+.mini-card td.hit { color: var(--on-accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--brand); }
+
+.check-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+
+/* 玩家名單 */
+.player-add { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.player-add input { font: 700 20px var(--font) !important; min-width: 0; }
+.player-pick { width: 48px; height: 48px; border-radius: 10px; background: var(--picture); }
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.icon-grid button {
+  display: grid; place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  background: var(--picture);
+  border: 3px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.icon-grid button[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--brand); }
+.icon-grid img { width: 32px; height: 32px; }
+.player-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 40vh; overflow: auto; }
+.player-list li { display: flex; align-items: center; gap: 10px; padding: 4px 6px; background: var(--surface-2); border-radius: var(--radius-sm); }
+.player-list li span { flex: 1; font-weight: 700; }
+.player-list img { width: 32px; height: 32px; border-radius: 8px; background: var(--picture); }
+.player-list button { border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 10px; border-radius: 6px; }
+.player-list button:hover { color: var(--live); background: var(--surface); }
+.player-list:empty::before { content: "未有玩家：入個名、揀個頭像，撳「加入」。"; color: var(--muted); font-size: 14px; }
+
+.stake { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 14px; font-weight: 700; color: var(--muted); }
+.stake-in { display: inline-flex; align-items: center; gap: 4px; font: 900 20px var(--num); color: var(--text); }
+.stake-in input { width: 96px; padding: 6px 10px !important; }
+.stake-total { color: var(--brand-2); }
+
+/* The winner picker in the check dialog. */
+.check-winners { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.winners-head { font-weight: 700; }
+.winners-head b { color: var(--brand-2); margin-left: 4px; }
+.winner-pick { display: flex; flex-wrap: wrap; gap: 6px; max-height: 30vh; overflow: auto; }
+.winner-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 12px 3px 3px;
+  font: 700 14px var(--font);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.winner-btn img { width: 28px; height: 28px; border-radius: 50%; background: var(--picture); image-rendering: pixelated; }
+.winner-btn[aria-pressed="true"] { color: var(--on-accent); background: var(--accent); border-color: var(--brand); }
+.winner-btn[aria-pressed="true"]::after { content: "✓"; }
+
+#confetti { position: fixed; inset: 0; z-index: 100; pointer-events: none; image-rendering: pixelated; }
+
+:is(button, a, select, input, summary):focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ------------------------------------------------------------------ */
+/* Phones and narrow screens                                           */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .stage { height: auto; min-height: 440px; }
+  .desk-bar { grid-template-columns: 1fr 1fr; }
+  .desk-bar .btn-draw { grid-column: 1 / -1; }
+  .desk-bar .btn-bingo { grid-column: 1 / -1; min-height: 52px; }
+  .desk-col { display: contents; }
+  .desk .hint { grid-column: 1 / -1; text-align: center; }
+  .prize { margin-top: 38px; }
+  .countdown { top: auto; bottom: 150px; left: 10px; }
+  .cd-ring { --size: 76px; }
+  .prize-bob { padding: 2px 14px 4px; }
+  .coin { display: none; }
+  @keyframes drift { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-25%); } 75% { transform: translateX(25%); } }
+  .ball { --bw: min(240px, 62vw, 84cqh); }
+  .recent { top: 44px; right: 10px; gap: 6px; }
+  .board-75 { gap: 3px; }
+  .cell { border-radius: 4px; }
+}
+
+@media (max-width: 560px) {
+  .brand-text small, #fullBtn { display: none; }
+  .appbar { gap: 10px; }
+  .appbar-right { gap: 6px; }
+  .board-75 { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .board-75 .cell.head { grid-column: 1 / -1; aspect-ratio: auto; height: 28px; }
+  .mini { width: 38px; height: 38px; font-size: 14px; border-width: 4px; }
+}
+
+@media (max-width: 400px) {
+  .brand-mark { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ball[data-state], .cell.last, .pill-live i, .btn-draw, .btn-draw::after, .stage.shake, .mini, .stage.spinning .ball::after, .players-track, .player-chip, .player-gain, .prize, .prize-bob, .coin, .leaderboard, .lb-row, .countdown .cd-ring { animation: none !important; transition: none !important; }
+}
+
+/* Laptop-height screens: slimmer bands at the bottom of the picture, so the
+   ball and the callers in front of it get the height. */
+@media (max-height: 920px) and (min-width: 901px) {
+  .lower-third { min-height: 46px; }
+  .caption { padding: 4px 16px; }
+  .players { padding: 13px 0 5px; }
+  .player-chip { padding-block: 1px; }
+}

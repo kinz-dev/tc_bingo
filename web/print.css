@@ -1,0 +1,107 @@
+/* 印卡 — A4 sheets of cards. On screen each sheet is a white page; on paper,
+   exactly one A4 page. Colours are forced on so the green band survives
+   "background graphics: off". */
+
+.print-controls { margin-top: 0; display: grid; gap: 12px; }
+.controls-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.controls-grid label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.controls-grid :is(input, select) {
+  padding: 8px 10px;
+  font: 15px var(--font);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.controls-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.sheets { display: grid; justify-content: center; gap: 24px; margin-top: 20px; }
+
+.sheet {
+  width: 210mm;
+  height: 297mm;
+  padding: 10mm;
+  display: grid;
+  gap: 8mm;
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: var(--shadow);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.sheet.per-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.sheet.per-2 { grid-template-rows: 1fr 1fr; justify-items: center; }
+.sheet.per-1 { place-items: center; }
+
+.card {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  width: 100%;
+  border: 2.5px solid #0b6b3a;
+  border-radius: 4mm;
+  overflow: hidden;
+  break-inside: avoid;
+}
+.sheet.per-2 .card { width: auto; height: 100%; aspect-ratio: 0.82; }
+.sheet.per-1 .card { width: 170mm; }
+
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2.5mm 4mm;
+  color: #fff;
+  background: #0b6b3a;
+}
+.card-title { font-weight: 700; font-size: 14pt; }
+.card-id {
+  padding: 0.6mm 2.5mm;
+  font: 900 13pt var(--num);
+  color: #1a1a1a;
+  background: #ffd200;
+  border-radius: 1.5mm;
+}
+
+.card table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+.card th {
+  padding: 1.5mm 0;
+  font: 900 20pt var(--num);
+  color: #fff;
+}
+.col-B { background: #1c7fd6; } .col-I { background: #e02020; } .col-N { background: #00a852; }
+.col-G { background: #e8a400; } .col-O { background: #7a4fd0; }
+.card td {
+  text-align: center;
+  font: 900 22pt var(--num);
+  border: 1px solid #c9ccd1;
+}
+.sheet.per-1 .card td { font-size: 34pt; height: 28mm; }
+.sheet.per-1 .card th { font-size: 30pt; }
+.card td.free { background: #ffd200; line-height: 1.1; }
+.card td.free span { display: block; font: 900 12pt var(--num); }
+.card td.free small { display: block; font-size: 8pt; font-weight: 700; }
+
+.card-foot {
+  display: flex; justify-content: space-between;
+  padding: 1.5mm 4mm;
+  font-size: 8pt;
+  color: #5f6368;
+  background: #f3f4f6;
+}
+.card-id-small { font-family: var(--num); font-weight: 900; }
+
+@media (max-width: 900px) {
+  .controls-grid { grid-template-columns: 1fr 1fr; }
+  /* A real-size A4 doesn't fit a phone: show it shrunk. */
+  .sheets { justify-content: start; overflow-x: auto; }
+  .sheet { zoom: 0.42; }
+}
+
+@page { size: A4; margin: 0; }
+
+@media print {
+  .no-print { display: none !important; }
+  html, body { background: #fff !important; }
+  .page { max-width: none; padding: 0; margin: 0; }
+  .sheets { display: block; margin: 0; }
+  .sheet { box-shadow: none; zoom: 1; break-after: page; }
+  .sheet:last-child { break-after: auto; }
+}

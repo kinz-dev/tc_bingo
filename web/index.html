@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-HK" data-theme="forest">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>譚仔揼波拿 · 揼波拿之夜</title>
+<meta name="description" content="派對揼波拿主持台：抽號、粵語叫號、多把聲、核對 Bingo。">
+<meta name="theme-color" content="#0b6b3a">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="appbar">
+  <a class="brand" href="./" aria-label="譚仔揼波拿">
+    <span class="brand-mark">BINGO</span>
+    <span class="brand-text"><strong>譚仔揼波拿</strong><small>派對主持台</small></span>
+  </a>
+  <div class="appbar-right">
+    <span class="count-pill" id="countPill">未開波</span>
+    <a class="app-link" href="print.html" title="印 Bingo 卡（每張有卡號）">印卡</a>
+    <button class="app-link" id="fullBtn" type="button" title="全螢幕（投影用）">全螢幕</button>
+  </div>
+</header>
+
+<main class="page">
+
+  <section class="live">
+    <!-- The picture: what the room watches. -->
+    <div class="stage" id="stage">
+      <canvas class="stage-layer back" id="stageBack" aria-hidden="true"></canvas>
+      <canvas class="stage-layer front" id="stageFront" aria-hidden="true"></canvas>
+      <div class="flash" id="flash" aria-hidden="true"></div>
+      <div class="stage-bug"><span class="pill-live"><i></i>LIVE</span><span id="stageGame">第 1 局</span></div>
+      <div class="ball-wrap" id="ballWrap">
+        <div class="ball" id="ball" data-state="idle">
+          <span class="ball-letter" id="ballLetter"></span>
+          <span class="ball-num" id="ballNum">?</span>
+        </div>
+      </div>
+      <div class="recent" id="recent" aria-label="最近號碼"></div>
+      <div class="countdown" id="countdown" hidden aria-live="off">
+        <div class="cd-ring"><b id="cdNum">6</b></div>
+        <small>下一個波</small>
+      </div>
+      <div class="prize" id="prize" hidden aria-live="polite">
+        <div class="prize-bob">
+          <i class="coin"></i><i class="coin"></i><i class="coin"></i>
+          <small>今局獎金</small><b id="prizeAmt">$0</b>
+        </div>
+      </div>
+      <div class="lower-third">
+        <span class="speaker" id="speaker">龍哥</span>
+        <p class="caption" id="caption">撳「開波」，主持會同大家打個招呼。</p>
+      </div>
+      <!-- 完場排行榜: the night's results, over the whole picture. -->
+      <div class="leaderboard" id="leaderboard" hidden>
+        <div class="lb-inner">
+          <h2 class="lb-title">今晚排行榜</h2>
+          <p class="lb-sub" id="lbSub"></p>
+          <ol class="lb-list" id="lbList"></ol>
+        </div>
+        <button class="lb-close" id="lbClose" type="button" aria-label="閂排行榜">✕</button>
+      </div>
+      <button class="players" id="players" type="button" aria-label="玩家名單（撳一下改）" hidden>
+        <span class="players-track" id="playersTrack"></span>
+      </button>
+    </div>
+
+    <!-- The desk: what the host presses, in a bar under the picture. -->
+    <aside class="desk">
+      <div class="desk-bar">
+        <button class="btn btn-draw" id="drawBtn" type="button">開波</button>
+        <div class="desk-col">
+          <button class="btn btn-ghost" id="autoBtn" type="button" aria-pressed="false">自動抽 ▶</button>
+          <button class="btn btn-ghost" id="repeatBtn" type="button">重講</button>
+        </div>
+        <button class="btn btn-bingo" id="bingoBtn" type="button">有人叫 Bingo！</button>
+        <div class="desk-col">
+          <button class="btn btn-ghost btn-small" id="undoBtn" type="button">撤回上一個</button>
+          <button class="btn btn-ghost btn-small" id="newBtn" type="button">新一局</button>
+          <button class="btn btn-ghost btn-small btn-danger" id="resetBtn" type="button">全部重設</button>
+        </div>
+        <div class="desk-col">
+          <button class="btn btn-ghost btn-small" id="playersBtn" type="button">玩家名單</button>
+          <button class="btn btn-ghost btn-small" id="boardBtn" type="button" hidden>🏆 完場排行榜</button>
+          <p class="hint">空白鍵：抽號 · A：自動 · R：重講 · B：Bingo! · L：排行榜</p>
+        </div>
+      </div>
+      <p class="warm" id="warm" hidden></p>
+
+      <details class="settings" id="settings">
+        <summary>設定</summary>
+        <label>叫號方式
+          <select id="optMode">
+            <option value="duo">主持 + 助手</option>
+            <option value="rotate">輪流叫（全部嘉賓）</option>
+            <option value="random">隨機一把聲</option>
+          </select>
+        </label>
+        <label>主持 <select id="optHost"></select></label>
+        <label>助手 <select id="optHelper"></select></label>
+        <label>搞笑程度
+          <select id="optFun">
+            <option value="0">正經</option>
+            <option value="1">少少</option>
+            <option value="2">好多</option>
+          </select>
+        </label>
+        <label>號碼
+          <select id="optPool">
+            <option value="75">1–75（B I N G O）</option>
+            <option value="90">1–90</option>
+          </select>
+        </label>
+        <label>贏法
+          <select id="optWin">
+            <option value="line">一條線（橫、直、斜）</option>
+            <option value="two">兩條線</option>
+            <option value="corners">四角</option>
+            <option value="full">全卡</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="optLetters"> 讀出英文字母（B、I、N、G、O）</label>
+        <label class="check"><input type="checkbox" id="optSfx"> 音效（鼓聲、歡呼、煙花）</label>
+        <label class="check"><input type="checkbox" id="optBeat"> 緊張心跳（抽得越多越快）</label>
+        <label>自動間隔
+          <select id="optGap">
+            <option value="3">3 秒</option>
+            <option value="6">6 秒</option>
+            <option value="10">10 秒</option>
+            <option value="15">15 秒</option>
+          </select>
+        </label>
+        <label>配色
+          <select id="optTheme">
+            <option value="forest">森林綠</option>
+            <option value="night">夜場</option>
+          </select>
+        </label>
+        <p class="fine">改號碼數量要開新一局先生效。</p>
+      </details>
+    </aside>
+  </section>
+
+  <section class="panel board-panel">
+    <div class="panel-head">
+      <h2>號碼板</h2>
+      <span class="fine" id="boardNote"></span>
+    </div>
+    <div class="board" id="board"></div>
+  </section>
+
+</main>
+
+<!-- 核對 Bingo: the cards are paper, so the host reads the claimed numbers in. -->
+<dialog class="check-dialog" id="checkDialog">
+  <form method="dialog" class="check-form" id="checkForm">
+    <h2>核對 Bingo <span class="fine" id="checkRule"></span></h2>
+    <label class="check-id">卡號
+      <input id="cardInput" inputmode="numeric" autocomplete="off" placeholder="例如：0042">
+    </label>
+    <div class="check-card" id="checkCard"></div>
+    <details class="check-manual" id="checkManual">
+      <summary>張卡冇卡號？逐個號碼入</summary>
+      <p class="fine">輸入嗰條線（或全張卡）嘅號碼，用空格或逗號分開。中間 FREE 格唔使入。</p>
+      <input id="checkInput" inputmode="numeric" autocomplete="off" placeholder="例如：3 18 41 52 70">
+    </details>
+    <div class="check-result" id="checkResult"></div>
+    <div class="check-winners" id="checkWinners" hidden>
+      <p class="winners-head">邊個贏？<span class="fine">可以揀多過一個，獎金平分</span> <b id="splitNote"></b></p>
+      <div class="winner-pick" id="winnerPick"></div>
+    </div>
+    <div class="check-actions">
+      <button class="btn btn-ghost" value="cancel" type="submit">取消</button>
+      <button class="btn btn-bad" id="claimBad" type="button">未得 ✗</button>
+      <button class="btn btn-primary" id="claimGood" type="button">真 Bingo ✓</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 玩家: a name and a pixel icon each, shown along the bottom of the stage. -->
+<dialog class="check-dialog players-dialog" id="playersDialog">
+  <form method="dialog" class="check-form" id="playersForm">
+    <h2>玩家名單 <span class="fine" id="playersCount"></span></h2>
+    <div class="player-add">
+      <img class="player-pick" id="playerPick" alt="" width="48" height="48">
+      <input id="playerName" maxlength="12" autocomplete="off" placeholder="玩家名">
+      <button class="btn btn-primary" id="playerAdd" type="button">加入</button>
+    </div>
+    <label class="stake">每人每局注金
+      <span class="stake-in">$ <input id="stakeInput" type="number" min="0" step="0.5" inputmode="decimal"></span>
+      <span class="stake-total" id="stakeTotal"></span>
+    </label>
+    <div class="icon-grid" id="iconGrid" role="radiogroup" aria-label="揀頭像"></div>
+    <ul class="player-list" id="playerList"></ul>
+    <div class="check-actions">
+      <button class="btn btn-ghost btn-small" id="winningsClear" type="button">輸贏清零</button>
+      <button class="btn btn-ghost btn-small" id="playersClear" type="button">全部清除</button>
+      <button class="btn btn-primary" value="done" type="submit">搞掂</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 全部重設: back to the start of the night. -->
+<dialog class="check-dialog" id="resetDialog">
+  <form method="dialog" class="check-form">
+    <h2>全部重設？</h2>
+    <p>會清晒：抽過嘅號碼、局數（返去第 1 局）、獎金池、每位玩家嘅輸贏同贏咗幾多局。設定會保留。</p>
+    <label class="check-line"><input type="checkbox" id="resetPlayers"> 連玩家名單都刪埋</label>
+    <div class="check-actions">
+      <button class="btn btn-ghost" value="cancel" type="submit">取消</button>
+      <button class="btn btn-bad" id="resetGo" type="button">全部重設</button>
+    </div>
+  </form>
+</dialog>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

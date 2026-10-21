@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-HK" data-theme="forest">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>譚仔揼波拿 · 印卡</title>
+<meta name="theme-color" content="#0b6b3a">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="print.css">
+</head>
+<body>
+
+<header class="appbar no-print">
+  <a class="brand" href="./" aria-label="返主持台">
+    <span class="brand-mark">BINGO</span>
+    <span class="brand-text"><strong>譚仔揼波拿</strong><small>印卡</small></span>
+  </a>
+  <div class="appbar-right">
+    <a class="app-link" href="./">← 主持台</a>
+  </div>
+</header>
+
+<main class="page">
+  <section class="panel print-controls no-print">
+    <div class="controls-grid">
+      <label>起始卡號 <input id="from" type="number" min="1" max="9999" value="1"></label>
+      <label>張數 <input id="count" type="number" min="1" max="200" value="20"></label>
+      <label>每頁
+        <select id="perPage">
+          <option value="4">4 張（A4）</option>
+          <option value="2">2 張（A4）</option>
+          <option value="1">1 張（A4）</option>
+        </select>
+      </label>
+      <label class="wide">卡面標題 <input id="title" maxlength="24" value="譚仔揼波拿夜"></label>
+    </div>
+    <div class="controls-foot">
+      <p class="fine" id="summary"></p>
+      <button class="btn btn-primary" id="printBtn" type="button">印 🖨</button>
+    </div>
+    <p class="fine">每張卡由卡號計出嚟：同一個卡號永遠係同一張卡。有人叫 Bingo，喺主持台入卡號就自動核對。印第二批記得由未用過嘅卡號開始。</p>
+  </section>
+
+  <div class="sheets" id="sheets"></div>
+</main>
+
+<script type="module" src="print.js"></script>
+</body>
+</html>
